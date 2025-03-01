@@ -20,7 +20,7 @@ A simple system for automatically downloading ComfyUI output images to Dropbox (
 1. Clone this repository to your RunPod container:
 
 ```bash
-git clone https://github.com/yourusername/comfy-download.git
+git clone https://github.com/rafstahelin/comfy-download.git
 cd comfy-download
 ```
 
@@ -48,6 +48,7 @@ After installation, you'll have the following commands available:
 | `status` | Show current download statistics |
 | `run` | Run a download check manually once |
 | `reset` | Clean up duplicate entries in the log file |
+| `dl-help` | Display command reference |
 
 ## How It Works
 
