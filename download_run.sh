@@ -3,7 +3,7 @@
 # This script runs in a loop for 1 minute, executing our download script every 10 seconds
 
 # Set variables
-SCRIPT_PATH="/workspace/download_images.sh"
+SCRIPT_PATH="/workspace/comfy-download/download_images.sh"
 LOG_DIR="/workspace/ComfyUI/logs"
 CRON_LOG="$LOG_DIR/cron.log"
 
