@@ -1,85 +1,45 @@
-# ComfyUI Download System
+# ComfyUI Download Manager
 
-A simple system for automatically downloading ComfyUI output images to Dropbox (or any rclone destination) and tracking which files have been downloaded.
+## Overview
+The ComfyUI Download Manager is an integrated system that automatically monitors and processes generated images from ComfyUI. It works seamlessly with the Easy system, providing simple command-line aliases for managing your image downloads.
 
 ## Features
-
-- Automatically downloads new images from ComfyUI's output folder
-- Runs every 10 seconds via cron
-- Tracks downloaded images to avoid duplicates
-- Simple commands to manage the download system
-
-## Requirements
-
-- RunPod container with ComfyUI installed
-- rclone configured with a Dropbox remote (or other destination)
-- cron installed in the container
+- Automatic monitoring of ComfyUI output directory
+- Scheduled background processing using cron jobs
+- Simple command-line interface for managing downloads
+- Daily logging of downloaded images
+- Automatic deduplication of download logs
 
 ## Installation
-
-1. Clone this repository to your RunPod container:
-
-```bash
-git clone https://github.com/rafstahelin/comfy-download.git
-cd comfy-download
-```
-
-2. Run the setup script:
-
-```bash
+The download manager is automatically installed when you run the Easy setup script:
+cd /workspace/easy
 chmod +x setup.sh
-./setup.sh
-```
-
-3. Start the download system:
-
-```bash
-start
-```
-
-## Commands
-
-After installation, you'll have the following commands available:
+bash setup.sh
+source ~/.bashrc
+Copy
+## Usage
+After installation, the following commands are available:
 
 | Command | Description |
 |---------|-------------|
-| `start` | Start the automatic download system |
-| `stop` | Stop the automatic download system |
-| `status` | Show current download statistics |
-| `run` | Run a download check manually once |
-| `reset` | Clean up duplicate entries in the log file |
-| `dl-help` | Display command reference |
+| `dl start` | Start the automatic download system (activates cron job) |
+| `dl stop` | Stop the automatic download system |
+| `dl status` | Show current download statistics |
+| `dl run` | Run a download check manually once |
+| `dl reset` | Clean up duplicate entries in the log file |
+| `dl help` | Display command reference |
 
 ## How It Works
+1. When you run `dl start`, a cron job is set up to run every minute
+2. The cron job executes the download script which checks for new images
+3. Images are logged in `/workspace/ComfyUI/logs/downloaded_YYYY-MM-DD.log`
+4. Statistics can be viewed at any time using the `dl status` command
 
-- The system uses cron to run a check every minute
-- Each check runs 6 times with a 10-second pause, ensuring new images are detected quickly
-- Images are downloaded from `/workspace/ComfyUI/output/YYYY-MM-DD/` to your configured destination
-- Downloaded files are tracked in a log file to avoid re-downloading
-
-## Customization
-
-You can modify the scripts to change:
-
-- The source directory path (default: `/workspace/ComfyUI/output/YYYY-MM-DD/`)
-- The destination path (default: `dbx:/studio/ai/output/output-eagle.library/output-eagle`)
-- The check frequency (default: every 10 seconds)
-
-Edit the `download_images.sh` file to change these settings.
-
-## Logs
-
-Logs are stored in the following locations:
-
-- Download log: `/workspace/ComfyUI/logs/downloaded_YYYY-MM-DD.log`
-- Cron execution log: `/workspace/ComfyUI/logs/cron.log`
-
-## Troubleshooting
-
-If you encounter issues:
-
-1. Check if cron is running: `service cron status`
-2. Verify your rclone configuration: `rclone config show`
-3. Check the logs: `cat /workspace/ComfyUI/logs/cron.log`
-4. Run the download script manually: `run`
-5. Reset the log file if there are duplicates: `reset`
+## Requirements
+- RunPod environment with ComfyUI installed
+- Bash shell environment
+- Cron service
+For your requirements file, here's a simple specification you can use:
+Copy# Requirements for ComfyUI Download Manager
+cron
+bash >= 4.0
