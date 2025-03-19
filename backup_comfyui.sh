@@ -6,8 +6,10 @@
 
 # Source directory to backup
 SOURCE_DIR="/workspace/ComfyUI/user/default"
-# Destination directory on Dropbox
-DEST_DIR="dbx:/studio/ai/libs/comfy-data/bckp-runpod-default"
+# Parent directory for changing into before zipping
+PARENT_DIR="/workspace/ComfyUI/user"
+# Destination directory on Dropbox - UPDATED PATH
+DEST_DIR="dbx:/studio/ai/libs/comfy-data/default-bckp"
 # Logs directory
 LOGS_DIR="/workspace/ComfyUI/logs"
 # Temporary directory for zip files
@@ -69,9 +71,9 @@ fi
 # Start backup process
 log_message "Starting backup of $SOURCE_DIR"
 
-# Create zip file
+# Create zip file (changing directory first to avoid full path structure)
 log_message "Creating zip file $ZIP_FILE"
-if ! zip -r "$ZIP_FILE" "$SOURCE_DIR"; then
+if ! (cd "$PARENT_DIR" && zip -r "$ZIP_FILE" "default"); then
   log_message "ERROR: Failed to create zip file"
   exit 1
 fi
