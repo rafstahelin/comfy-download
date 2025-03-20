@@ -1,17 +1,21 @@
-# Edit your .bashrc file
-nano ~/.bashrc
+#!/bin/bash
 
-# Find the alias section and replace it with:
+# This script ensures all comfy-download aliases are properly set up
+# without conflicting with other repositories
 
-# Image download system function
-dl() {
-  if [ "$#" -eq 0 ]; then
-    /workspace/comfy-download/dl-manager.sh help
-  else
-    /workspace/comfy-download/dl-manager.sh "$@"
-  fi
-}
+# First, remove any existing problematic aliases
+sed -i '/alias dl=/d' ~/.bashrc
 
-# Save the file (Ctrl+O, Enter, Ctrl+X)
-# Then source it
-source ~/.bashrc
+# Now add the alias to .bashrc with clear comment markers
+if ! grep -q '# BEGIN COMFY-DOWNLOAD ALIASES' ~/.bashrc; then
+  cat >> ~/.bashrc << 'EOF'
+
+# BEGIN COMFY-DOWNLOAD ALIASES
+# These aliases are managed by the comfy-download repository
+alias dl="bash /workspace/comfy-download/dl-manager.sh"
+# END COMFY-DOWNLOAD ALIASES
+EOF
+fi
+
+echo "Comfy-download aliases have been updated."
+echo "Run 'source ~/.bashrc' to activate them in this session."

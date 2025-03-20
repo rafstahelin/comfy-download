@@ -6,6 +6,7 @@ chmod +x /workspace/comfy-download/download_run.sh
 chmod +x /workspace/comfy-download/backup_comfyui.sh
 chmod +x /workspace/comfy-download/bisync_comfyui.sh
 chmod +x /workspace/comfy-download/dl-manager.sh
+chmod +x /workspace/comfy-download/fix-aliases.sh
 
 # Create logs directory
 mkdir -p /workspace/ComfyUI/logs
@@ -112,17 +113,8 @@ EOF
 # Make all scripts executable
 chmod +x /workspace/bin/dl-*.sh
 
-# First remove any existing problematic aliases
-sed -i '/alias "dl /d' ~/.bashrc
-
-# Now add the single correct alias to .bashrc
-if ! grep -q 'alias dl="bash /workspace/comfy-download/dl-manager.sh"' ~/.bashrc; then
-  cat >> ~/.bashrc << 'EOF'
-
-# Image download system alias
-alias dl="bash /workspace/comfy-download/dl-manager.sh"
-EOF
-fi
+# Run our alias fix script
+/workspace/comfy-download/fix-aliases.sh
 
 # Inform the user
 echo "Download, backup and bidirectional sync system scripts and alias have been created"
