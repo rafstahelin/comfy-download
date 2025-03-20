@@ -120,13 +120,3 @@ chmod +x /workspace/bin/dl-*.sh
 echo "Download, backup and bidirectional sync system scripts and alias have been created"
 echo "Please run 'source ~/.bashrc' to activate them in this session"
 echo
-echo "Setup complete! Use the following commands to manage your downloads and backups:"
-echo "dl start  - Start automatic downloads, backups and bidirectional sync"
-echo "dl stop   - Stop automatic downloads, backups and bidirectional sync"
-echo "dl status - Show download, backup and sync statistics"
-echo "dl report - Generate a comprehensive report of today's operations"
-echo "dl run    - Run one download check manually"
-echo "dl backup - Run one backup manually"
-echo "dl bisync - Run one bidirectional sync manually (alias: dl bi)"
-echo "dl reset  - Clean up duplicate log entries"
-echo "dl help   - Display command reference"
