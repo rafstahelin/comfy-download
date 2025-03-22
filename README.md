@@ -41,7 +41,11 @@ After installation, the following commands are available:
 | dl backup | Run a backup of ComfyUI user folder to Dropbox manually |
 | dl bisync | Run a bidirectional sync of ComfyUI settings and workflows with Dropbox manually |
 | dl bi | Alias for dl bisync |
-| dl reset | Clean up duplicate entries in the log file |
+| dl customsync | Run a custom node data sync manually once |
+| dl cs | Alias for dl customsync |
+| dl checkconfig | Check and fix custom node configurations |
+| dl cc | Alias for dl checkconfig |
+| dl reset | Clean up duplicate log entries in the download log |
 | dl help | Display command reference |
 
 ## How It Works
@@ -56,7 +60,7 @@ After installation, the following commands are available:
 - When you run `dl start`, an immediate backup of your ComfyUI user settings is performed
 - A cron job is set up to back up your settings every hour
 - The backup includes the entire `/workspace/ComfyUI/user/default/` folder
-- Files are compressed as a timestamped zip file and uploaded to Dropbox at `dbx:/studio/ai/libs/comfy-data/workflow-bckp`
+- Files are compressed as a timestamped zip file and uploaded to Dropbox at `dbx:/studio/ai/libs/comfy-data/default-bckp`
 - Backup status can be viewed with the `dl status` command
 - Manual backups can be triggered with the `dl backup` command
 
@@ -67,21 +71,27 @@ After installation, the following commands are available:
   - `/workspace/ComfyUI/user/default/comfy.templates.json`
   - `/workspace/ComfyUI/user/default/comfy.settings.json`
   - `/workspace/ComfyUI/user/default/workflows/`
-- Files are synchronized with Dropbox at `dbx:/studio/ai/libs/comfy-data/comfyui-sync`
+- Files are synchronized with Dropbox at `dbx:/studio/ai/libs/comfy-data/default`
 - This ensures that when you start a new RunPod container, it will always have your latest workflows and settings
 - Manual sync can be triggered with the `dl bisync` command or the shorter `dl bi` command
 
-## Performance Considerations
+### Custom Node Data Synchronization
+- When you run `dl start`, an immediate custom node data sync is performed
+- A cron job is set up to sync custom node data every 30 minutes
+- The sync includes:
+  - `/workspace/comfy-data/milehighstyler` ↔ `dbx:/studio/ai/libs/comfy-data/milehighstyler`
+  - `/workspace/comfy-data/plushparameters` ↔ `dbx:/studio/ai/libs/comfy-data/plushparameters`
+  - `/workspace/comfy-data/plushprompts` ↔ `dbx:/studio/ai/libs/comfy-data/plushprompts`
+- This ensures that custom node data is synchronized between different RunPod instances
+- Manual sync can be triggered with the `dl customsync` command or the shorter `dl cs` command
 
-### Optimizing Workflow Size
-For best performance with the bidirectional sync:
-- Keep your workflow directory size under 30MB if possible (20-30MB is ideal)
-- Consider moving rarely used or archived workflows to a separate location outside the synced directory
-- The sync process might take longer with larger workflow directories
-- A staged approach to transition from 100MB to 30MB might be:
-  1. First, identify and move archived/rarely used workflows to a non-synced archive folder
-  2. Organize remaining workflows into logical subfolders
-  3. Consider compressing complex workflows where possible
+### Custom Node Configuration Management
+- When you run `dl start`, custom node configurations are automatically validated and fixed
+- A cron job is set up to check configurations every 6 hours
+- The checker manages:
+  - Plush-for-ComfyUI configuration (`/workspace/ComfyUI/custom_nodes/Plush-for-ComfyUI/user/text_file_dirs.json`)
+  - ComfyUI-Easy-Use styles symlink (`/workspace/ComfyUI/custom_nodes/ComfyUI-Easy-Use/styles`)
+- Manual configuration check can be triggered with the `dl checkconfig` command or the shorter `dl cc` command
 
 ## Directory Structure
 
@@ -92,6 +102,10 @@ For best performance with the bidirectional sync:
   - `/workspace/ComfyUI/user/default/workflows/` - Workflows synchronized with Dropbox
   - `/workspace/ComfyUI/user/default/comfy.templates.json` - Templates synchronized with Dropbox
   - `/workspace/ComfyUI/user/default/comfy.settings.json` - Settings synchronized with Dropbox
+- `/workspace/comfy-data/` - Custom node data synchronized with Dropbox
+  - `/workspace/comfy-data/milehighstyler/` - MileHighStyler data for ComfyUI-Easy-Use
+  - `/workspace/comfy-data/plushparameters/` - Parameter files for Plush-for-ComfyUI
+  - `/workspace/comfy-data/plushprompts/` - Prompt files for Plush-for-ComfyUI
 - `/tmp/comfyui-backup/` - Temporary location for zip files during backup
 
 ## Troubleshooting
@@ -120,6 +134,16 @@ For best performance with the bidirectional sync:
   - Check the bisync log for details: `cat /workspace/ComfyUI/logs/bisync.log`
   - If necessary, you can ensure fresh sync by deleting the sync state: `rm -f /workspace/ComfyUI/user/default/.rclone-bisync*`
 
+- **Custom node sync issues**
+  - Check if custom node data directories exist: `ls -la /workspace/comfy-data/`
+  - Check custom sync log: `cat /workspace/ComfyUI/logs/custom_sync.log`
+  - Try running custom sync manually: `dl customsync`
+
+- **Custom node configuration issues**
+  - Check if custom nodes are installed: `ls -la /workspace/ComfyUI/custom_nodes/`
+  - Check configuration log: `cat /workspace/ComfyUI/logs/node_config.log`
+  - Run configuration check manually: `dl checkconfig`
+
 - **Cron job not running**
   - Check cron service status: `service cron status`
   - View current cron jobs: `crontab -l`
@@ -138,6 +162,8 @@ For more detailed debugging:
   bash -x /workspace/comfy-download/dl-manager.sh help
   bash -x /workspace/comfy-download/backup_comfyui.sh force
   bash -x /workspace/comfy-download/bisync_comfyui.sh force
+  bash -x /workspace/comfy-download/custom_sync.sh force
+  bash -x /workspace/comfy-download/node_config_checker.sh apply
   ```
 
 - Verify file permissions:
@@ -148,6 +174,7 @@ For more detailed debugging:
 - Monitor sync operations in real-time:
   ```bash
   tail -f /workspace/ComfyUI/logs/bisync.log
+  tail -f /workspace/ComfyUI/logs/custom_sync.log
   ```
 
 - Test rclone connectivity:
@@ -155,32 +182,17 @@ For more detailed debugging:
   rclone lsd dbx:
   ```
 
-## Maintenance
+## Performance Considerations
 
-### Adding New Features
-
-To add new features to the download manager:
-
-- Update the dl-manager.sh script to add new command options
-- Modify the help text to document new commands
-- Update any affected paths or dependencies
-- Test thoroughly before committing changes
-
-### Reporting and Monitoring
-
-- Use `dl status` for a quick overview of current system status
-- Use `dl report` for a comprehensive report of today's operations, including:
-  - Download statistics
-  - Backup operations with timestamps
-  - Bidirectional sync details
-  - Workflow size monitoring and recommendations
-
-### Updating Workflows
-
-When organizing workflows:
-- Keep the total workflow folder size manageable (20-30MB as suggested)
-- Move rarely used or archived workflows to a separate location
-- For very large workflows, consider breaking them into smaller components
+### Optimizing Workflow Size
+For best performance with the bidirectional sync:
+- Keep your workflow directory size under 30MB if possible (20-30MB is ideal)
+- Consider moving rarely used or archived workflows to a separate location outside the synced directory
+- The sync process might take longer with larger workflow directories
+- A staged approach to transition from 100MB to 30MB might be:
+  1. First, identify and move archived/rarely used workflows to a non-synced archive folder
+  2. Organize remaining workflows into logical subfolders
+  3. Consider compressing complex workflows where possible
 
 ## Version History
 
@@ -190,6 +202,7 @@ When organizing workflows:
 - v1.3.0 - Added bidirectional sync of templates, settings, and workflows with Dropbox
 - v1.4.0 - Replaced hyphenated commands with space-separated commands for improved usability
 - v1.5.0 - Separated from Easy repository for independent installation and management
+- v1.6.0 - Added custom node data synchronization and configuration management
 
 ## License
 See LICENSE file for details.
