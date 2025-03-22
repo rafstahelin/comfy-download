@@ -1,13 +1,13 @@
-# comfy-download: Requirements & Feature Checklist
+# Custom Node Data Sync - Feature Checklist
 
-## Current Implementation
+## Currently Implemented (v1.6.0)
 - ✅ Custom node data sync between RunPod and Dropbox
 - ✅ Auto-configuration of Plush and EasyUse node settings
 - ✅ Command-line utilities: `dl customsync`, `dl checkconfig`
 - ✅ Cron scheduling for automatic syncs
 - ✅ Path verification and directory structure setup
 
-## Future Feature Checklist
+## Future Enhancements Roadmap
 
 1. ### Enhanced Error Handling
    - [ ] Add retry mechanisms for network failures
@@ -33,3 +33,5 @@
    - [ ] Incremental/delta sync options
    - [ ] Scheduled priority for large files
    - [ ] Bandwidth throttling during active usage
+
+*Note: This document tracks the development status of the Custom Node Data Sync feature introduced in v1.6.0.*
