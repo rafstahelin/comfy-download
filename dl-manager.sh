@@ -1,18 +1,46 @@
 #!/bin/bash
 
 command="$1"
+option="$2"
+
+# Run both bisync and customsync scripts based on options
+run_sync() {
+  local force_flag=""
+  if [ "$1" == "force" ]; then
+    force_flag="force"
+  fi
+  
+  # Default is to run both syncs
+  local run_workflows=true
+  local run_nodes=true
+  
+  # Check for specific options
+  if [ "$2" == "--workflows" ]; then
+    run_nodes=false
+  elif [ "$2" == "--nodes" ]; then
+    run_workflows=false
+  fi
+  # "--all" or no option runs both (default behavior)
+  
+  # Run the appropriate sync processes
+  if $run_workflows; then
+    /workspace/comfy-download/bisync_comfyui.sh $force_flag
+  fi
+  
+  if $run_nodes; then
+    /workspace/comfy-download/custom_sync.sh $force_flag
+  fi
+}
 
 case "$command" in
   start)
     service cron start
     # Run backup immediately
     /workspace/comfy-download/backup_comfyui.sh force
-    # Run bisync immediately to sync with latest settings from Dropbox
-    /workspace/comfy-download/bisync_comfyui.sh force
     # Run node config checker
     /workspace/comfy-download/node_config_checker.sh apply
-    # Run custom sync immediately
-    /workspace/comfy-download/custom_sync.sh force
+    # Run syncs immediately with the specified option or default to all
+    run_sync force "$option"
     # Set up cron jobs
     (crontab -l 2>/dev/null | grep -q 'comfy-download/download_run.sh' || (crontab -l 2>/dev/null; echo '* * * * * /workspace/comfy-download/download_run.sh') | crontab -)
     (crontab -l 2>/dev/null | grep -q 'comfy-download/backup_comfyui.sh' || (crontab -l 2>/dev/null; echo '0 * * * * /workspace/comfy-download/backup_comfyui.sh') | crontab -)
@@ -43,22 +71,23 @@ case "$command" in
       echo "$LAST_BACKUP"
     fi
 
-    # Add bisync status information
-    echo -e "\nBidirectional sync status:"
+    # Add sync status information (combined workflows and custom nodes)
+    echo -e "\nSync status:"
+    
+    # Workflow sync
     LAST_SYNC=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | tail -1)
     if [ -z "$LAST_SYNC" ]; then
-      echo "No successful syncs recorded"
+      echo "No successful workflow syncs recorded"
     else
-      echo "$LAST_SYNC"
+      echo "Workflows: $LAST_SYNC"
     fi
     
-    # Add custom sync status information
-    echo -e "\nCustom node data sync status:"
+    # Custom node sync
     LAST_CUSTOM_SYNC=$(grep "Custom node data sync process finished" /workspace/ComfyUI/logs/custom_sync.log 2>/dev/null | tail -1)
     if [ -z "$LAST_CUSTOM_SYNC" ]; then
       echo "No custom node data syncs recorded"
     else
-      echo "$LAST_CUSTOM_SYNC"
+      echo "Custom nodes: $LAST_CUSTOM_SYNC"
     fi
 
     # Check workflow size
@@ -80,10 +109,12 @@ case "$command" in
     /workspace/comfy-download/backup_comfyui.sh force
     ;;
     
-  bisync|bi)
-    /workspace/comfy-download/bisync_comfyui.sh force
+  bisync|bi|sync)
+    # Check the option passed and run sync accordingly
+    run_sync force "$option"
     ;;
   
+  # Keep these for backward compatibility, but they're now just aliases to sync with specific options
   customsync|cs)
     /workspace/comfy-download/custom_sync.sh force
     ;;
@@ -111,27 +142,28 @@ case "$command" in
     BACKUP_COUNT=$(grep "Backup complete" /workspace/ComfyUI/logs/backup.log 2>/dev/null | grep -c "$(date +%Y-%m-%d)")
     echo "  Backups today: $BACKUP_COUNT"
     
-    # Get sync information
-    echo -e "\nBidirectional Sync Status:"
+    # Get sync information (combined section)
+    echo -e "\nSync Status:"
+    
+    # Workflow sync
     LAST_SYNC=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | tail -1)
     if [ -z "$LAST_SYNC" ]; then
-      echo "  No successful syncs recorded"
+      echo "  No successful workflow syncs recorded"
     else
-      echo "  $LAST_SYNC"
+      echo "  Workflows: $LAST_SYNC"
     fi
     SYNC_COUNT=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | grep -c "$(date +%Y-%m-%d)")
-    echo "  Successful syncs today: $SYNC_COUNT"
+    echo "  Workflow syncs today: $SYNC_COUNT"
     
-    # Get custom sync information
-    echo -e "\nCustom Node Data Sync Status:"
+    # Custom node sync
     LAST_CUSTOM_SYNC=$(grep "Custom node data sync process finished" /workspace/ComfyUI/logs/custom_sync.log 2>/dev/null | tail -1)
     if [ -z "$LAST_CUSTOM_SYNC" ]; then
       echo "  No custom node data syncs recorded"
     else
-      echo "  $LAST_CUSTOM_SYNC"
+      echo "  Custom nodes: $LAST_CUSTOM_SYNC"
     fi
     CUSTOM_SYNC_COUNT=$(grep "Custom node data sync process finished" /workspace/ComfyUI/logs/custom_sync.log 2>/dev/null | grep -c "$(date +%Y-%m-%d)")
-    echo "  Custom syncs today: $CUSTOM_SYNC_COUNT"
+    echo "  Custom node syncs today: $CUSTOM_SYNC_COUNT"
     
     # Check storage usage
     WORKFLOW_SIZE=$(du -sh "/workspace/ComfyUI/user/default/workflows" 2>/dev/null | cut -f1)
@@ -163,19 +195,20 @@ case "$command" in
   help|*)
     echo "Command Reference:"
     echo "------------------"
-    echo "dl start      - Start the automatic download, backup and bidirectional sync system"
-    echo "dl stop       - Stop the automatic download, backup and bidirectional sync system"
-    echo "dl status     - Show current download, backup and sync statistics"
-    echo "dl report     - Generate a comprehensive report of today's operations"
-    echo "dl run        - Run a download check manually once"
-    echo "dl backup     - Run a backup manually once"
-    echo "dl bisync     - Run a bidirectional sync manually once"
-    echo "dl bi         - Alias for dl bisync"
-    echo "dl customsync - Run a custom node data sync manually once"
-    echo "dl cs         - Alias for dl customsync"
-    echo "dl checkconfig - Check and fix custom node configurations"
-    echo "dl cc         - Alias for dl checkconfig"
-    echo "dl reset      - Clean up duplicate log entries"
-    echo "dl help       - Display this help message"
+    echo "dl start [--all|--workflows|--nodes] - Start the automatic download and sync system"
+    echo "dl stop                           - Stop the automatic download and sync system"
+    echo "dl status                         - Show current download and sync statistics"
+    echo "dl report                         - Generate a comprehensive report of today's operations"
+    echo "dl run                            - Run a download check manually once"
+    echo "dl backup                         - Run a backup manually once"
+    echo "dl sync [--all|--workflows|--nodes] - Run sync manually with options"
+    echo "dl bisync                         - Alias for 'dl sync --workflows'"
+    echo "dl bi                             - Alias for 'dl sync --workflows'"
+    echo "dl customsync                     - Alias for 'dl sync --nodes'"
+    echo "dl cs                             - Alias for 'dl sync --nodes'"
+    echo "dl checkconfig                    - Check and fix custom node configurations"
+    echo "dl cc                             - Alias for dl checkconfig"
+    echo "dl reset                          - Clean up duplicate log entries"
+    echo "dl help                           - Display this help message"
     ;;
 esac
