@@ -43,6 +43,19 @@
 - [x] Manual custom sync triggering
 - [x] Automated configuration validation and repair
 
+## Security Enhancements (Upcoming)
+
+- [ ] Replace hardcoded paths with environment variables
+- [ ] Add proper input validation for all script arguments
+- [ ] Improve file handling with proper quoting and safe pattern matching
+- [ ] Implement mutex locking to prevent race conditions
+- [ ] Add comprehensive error handling with proper exit codes
+- [ ] Implement secure logging practices with rotation and sanitization
+- [ ] Use secure methods for temporary file creation with proper cleanup
+- [ ] Make cron job installation more transparent and configurable
+- [ ] Add file permission restrictions for sensitive configuration files
+- [ ] Implement proper command escaping to prevent injection vulnerabilities
+
 ## Next Steps
 
 - [ ] Pull latest changes after PR merge
@@ -51,3 +64,4 @@
 - [ ] Check for any remaining references to easy repository
 - [ ] Consider creating a simple installation guide in the Wiki
 - [ ] Add integration testing to ensure no regressions in functionality
+- [ ] Create a security-focused update branch for implementing security enhancements
