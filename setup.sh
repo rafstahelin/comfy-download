@@ -149,7 +149,7 @@ EOF
 # Make all scripts executable
 chmod +x /workspace/bin/dl-*.sh
 
-# Setup custom node configurations
+# Run node configuration checker
 /workspace/comfy-download/node_config_checker.sh apply
 
 # Run our alias fix script
