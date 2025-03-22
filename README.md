@@ -33,16 +33,17 @@ After installation, the following commands are available:
 
 | Command | Description |
 |---------|-------------|
-| dl start | Start the automatic download, backup and bidirectional sync system (activates cron jobs) |
-| dl stop | Stop the automatic download, backup and bidirectional sync system |
-| dl status | Show current download, backup and sync statistics |
+| dl start [--all\|--workflows\|--nodes] | Start the automatic download and sync system with options |
+| dl stop | Stop the automatic download and sync system |
+| dl status | Show current download and sync statistics |
 | dl report | Generate a comprehensive report of today's operations |
 | dl run | Run a download check manually once |
 | dl backup | Run a backup of ComfyUI user folder to Dropbox manually |
-| dl bisync | Run a bidirectional sync of ComfyUI settings and workflows with Dropbox manually |
-| dl bi | Alias for dl bisync |
-| dl customsync | Run a custom node data sync manually once |
-| dl cs | Alias for dl customsync |
+| dl sync [--all\|--workflows\|--nodes] | Run sync manually with options |
+| dl bisync | Alias for 'dl sync --workflows' |
+| dl bi | Alias for 'dl sync --workflows' |
+| dl customsync | Alias for 'dl sync --nodes' |
+| dl cs | Alias for 'dl sync --nodes' |
 | dl checkconfig | Check and fix custom node configurations |
 | dl cc | Alias for dl checkconfig |
 | dl reset | Clean up duplicate log entries in the download log |
@@ -73,7 +74,7 @@ After installation, the following commands are available:
   - `/workspace/ComfyUI/user/default/workflows/`
 - Files are synchronized with Dropbox at `dbx:/studio/ai/libs/comfy-data/default`
 - This ensures that when you start a new RunPod container, it will always have your latest workflows and settings
-- Manual sync can be triggered with the `dl bisync` command or the shorter `dl bi` command
+- Manual sync can be triggered with the `dl sync --workflows` command (or the shorter `dl bisync` or `dl bi` aliases)
 
 ### Custom Node Data Synchronization
 - When you run `dl start`, an immediate custom node data sync is performed
@@ -83,7 +84,12 @@ After installation, the following commands are available:
   - `/workspace/comfy-data/plushparameters` ↔ `dbx:/studio/ai/libs/comfy-data/plushparameters`
   - `/workspace/comfy-data/plushprompts` ↔ `dbx:/studio/ai/libs/comfy-data/plushprompts`
 - This ensures that custom node data is synchronized between different RunPod instances
-- Manual sync can be triggered with the `dl customsync` command or the shorter `dl cs` command
+- Manual sync can be triggered with the `dl sync --nodes` command (or the shorter `dl customsync` or `dl cs` aliases)
+
+### All-in-One Synchronization
+- You can sync both workflows and custom nodes in a single operation with `dl sync --all` or simply `dl sync`
+- This is useful when you want to ensure everything is synchronized at once
+- The `dl start` command by default runs both types of sync operations
 
 ### Custom Node Configuration Management
 - When you run `dl start`, custom node configurations are automatically validated and fixed
@@ -127,17 +133,17 @@ After installation, the following commands are available:
   - Check if source directory exists: `ls -la /workspace/ComfyUI/user/default`
   - Check backup log: `cat /workspace/ComfyUI/logs/backup.log`
   - Check sync log: `cat /workspace/ComfyUI/logs/bisync.log`
-  - Try running backup or sync manually: `dl backup` or `dl bisync`
+  - Try running backup or sync manually: `dl backup` or `dl sync`
 
 - **Bidirectional sync conflicts**
-  - If you encounter conflicts, run a forced sync with: `dl bisync`
+  - If you encounter conflicts, run a forced sync with: `dl sync`
   - Check the bisync log for details: `cat /workspace/ComfyUI/logs/bisync.log`
   - If necessary, you can ensure fresh sync by deleting the sync state: `rm -f /workspace/ComfyUI/user/default/.rclone-bisync*`
 
 - **Custom node sync issues**
   - Check if custom node data directories exist: `ls -la /workspace/comfy-data/`
   - Check custom sync log: `cat /workspace/ComfyUI/logs/custom_sync.log`
-  - Try running custom sync manually: `dl customsync`
+  - Try running custom sync manually: `dl sync --nodes`
 
 - **Custom node configuration issues**
   - Check if custom nodes are installed: `ls -la /workspace/ComfyUI/custom_nodes/`
@@ -203,6 +209,7 @@ For best performance with the bidirectional sync:
 - v1.4.0 - Replaced hyphenated commands with space-separated commands for improved usability
 - v1.5.0 - Separated from Easy repository for independent installation and management
 - v1.6.0 - Added custom node data synchronization and configuration management
+- v1.7.0 - Simplified sync commands with unified structure and options
 
 ## License
 See LICENSE file for details.
