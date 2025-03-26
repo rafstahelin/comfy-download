@@ -1,58 +1,102 @@
 #!/bin/bash
 
 command="$1"
-option="$2"
+shift 1  # Remove the command from the arguments list
+options="$@"  # Capture all remaining arguments
 
-# Run both bisync and customsync scripts based on options
-run_sync() {
-  local force_flag=""
-  if [ "$1" == "force" ]; then
-    force_flag="force"
-  fi
-  
-  # Default is to run both syncs
+# Parse options from the remaining arguments
+parse_options() {
   local run_workflows=true
   local run_nodes=true
   
-  # Check for specific options
-  if [ "$2" == "--workflows" ]; then
-    run_nodes=false
-  elif [ "$2" == "--nodes" ]; then
-    run_workflows=false
-  fi
-  # "--all" or no option runs both (default behavior)
+  for opt in $@; do
+    case "$opt" in
+      --workflows)
+        run_nodes=false
+        ;;
+      --nodes)
+        run_workflows=false
+        ;;
+      # --all is redundant but kept for backward compatibility
+      --all)
+        run_workflows=true
+        run_nodes=true
+        ;;
+    esac
+  done
   
-  # Run the appropriate sync processes
-  if $run_workflows; then
+  echo "$run_workflows $run_nodes"
+}
+
+# Run sync scripts based on options
+run_sync() {
+  local force_flag="force"  # Always force when manual
+  local parsed_options=$(parse_options $@)
+  local run_workflows=$(echo $parsed_options | cut -d' ' -f1)
+  local run_nodes=$(echo $parsed_options | cut -d' ' -f2)
+  
+  if [ "$run_workflows" = "true" ]; then
+    echo "Running workflow synchronization..."
     /workspace/comfy-download/bisync_comfyui.sh $force_flag
   fi
   
-  if $run_nodes; then
+  if [ "$run_nodes" = "true" ]; then
+    echo "Running custom node data synchronization..."
     /workspace/comfy-download/custom_sync.sh $force_flag
+  fi
+}
+
+# Function to show deprecated command warnings
+show_deprecated_warning() {
+  local old_cmd="$1"
+  local new_cmd="$2"
+  echo "Warning: '$old_cmd' is deprecated and will be removed in a future update."
+  echo "Please use '$new_cmd' instead."
+  echo ""
+}
+
+# Start cron jobs based on options
+start_cron_jobs() {
+  local parsed_options=$(parse_options $@)
+  local run_workflows=$(echo $parsed_options | cut -d' ' -f1)
+  local run_nodes=$(echo $parsed_options | cut -d' ' -f2)
+  
+  service cron start
+  
+  # Always start these core services
+  (crontab -l 2>/dev/null | grep -q 'comfy-download/download_run.sh' || (crontab -l 2>/dev/null; echo '* * * * * /workspace/comfy-download/download_run.sh') | crontab -)
+  (crontab -l 2>/dev/null | grep -q 'comfy-download/backup_comfyui.sh' || (crontab -l 2>/dev/null; echo '0 * * * * /workspace/comfy-download/backup_comfyui.sh') | crontab -)
+  (crontab -l 2>/dev/null | grep -q 'comfy-download/node_config_checker.sh' || (crontab -l 2>/dev/null; echo '0 */6 * * * /workspace/comfy-download/node_config_checker.sh apply') | crontab -)
+  
+  # Start workflow sync if specified
+  if [ "$run_workflows" = "true" ]; then
+    (crontab -l 2>/dev/null | grep -q 'comfy-download/bisync_comfyui.sh' || (crontab -l 2>/dev/null; echo '*/5 * * * * /workspace/comfy-download/bisync_comfyui.sh') | crontab -)
+    echo "Workflow synchronization service started"
+  fi
+  
+  # Start custom node sync if specified
+  if [ "$run_nodes" = "true" ]; then
+    (crontab -l 2>/dev/null | grep -q 'comfy-download/custom_sync.sh' || (crontab -l 2>/dev/null; echo '*/30 * * * * /workspace/comfy-download/custom_sync.sh') | crontab -)
+    echo "Custom node synchronization service started"
   fi
 }
 
 case "$command" in
   start)
-    service cron start
-    # Run backup immediately
+    # Run immediate operations
+    echo "Starting services..."
     /workspace/comfy-download/backup_comfyui.sh force
-    # Run node config checker
     /workspace/comfy-download/node_config_checker.sh apply
-    # Run syncs immediately with the specified option or default to all
-    run_sync force "$option"
+    run_sync $options
+    
     # Set up cron jobs
-    (crontab -l 2>/dev/null | grep -q 'comfy-download/download_run.sh' || (crontab -l 2>/dev/null; echo '* * * * * /workspace/comfy-download/download_run.sh') | crontab -)
-    (crontab -l 2>/dev/null | grep -q 'comfy-download/backup_comfyui.sh' || (crontab -l 2>/dev/null; echo '0 * * * * /workspace/comfy-download/backup_comfyui.sh') | crontab -)
-    (crontab -l 2>/dev/null | grep -q 'comfy-download/bisync_comfyui.sh' || (crontab -l 2>/dev/null; echo '*/5 * * * * /workspace/comfy-download/bisync_comfyui.sh') | crontab -)
-    (crontab -l 2>/dev/null | grep -q 'comfy-download/custom_sync.sh' || (crontab -l 2>/dev/null; echo '*/30 * * * * /workspace/comfy-download/custom_sync.sh') | crontab -)
-    (crontab -l 2>/dev/null | grep -q 'comfy-download/node_config_checker.sh' || (crontab -l 2>/dev/null; echo '0 */6 * * * /workspace/comfy-download/node_config_checker.sh apply') | crontab -)
-    echo 'Image download, backup and bidirectional sync system started!'
+    start_cron_jobs $options
+    echo 'All services started successfully!'
     ;;
   
   stop)
     (crontab -l 2>/dev/null | grep -v 'comfy-download' | crontab -)
-    echo 'Image download, backup and bidirectional sync system stopped!'
+    echo 'All services stopped.'
     ;;
   
   status)
@@ -102,24 +146,36 @@ case "$command" in
     ;;
   
   run)
+    echo "Running manual image download..."
     /workspace/comfy-download/download_images.sh
     ;;
     
   backup)
+    echo "Running manual backup..."
     /workspace/comfy-download/backup_comfyui.sh force
     ;;
     
-  bisync|bi|sync)
-    # Check the option passed and run sync accordingly
-    run_sync force "$option"
+  sync)
+    run_sync $options
     ;;
   
-  # Keep these for backward compatibility, but they're now just aliases to sync with specific options
+  # Handle deprecated commands with warnings
+  bisync|bi)
+    show_deprecated_warning "dl $command" "dl sync --workflows"
+    run_sync --workflows
+    ;;
+    
   customsync|cs)
-    /workspace/comfy-download/custom_sync.sh force
+    show_deprecated_warning "dl $command" "dl sync --nodes"
+    run_sync --nodes
     ;;
     
   checkconfig|cc)
+    if [ "$command" = "cc" ]; then
+      # cc is the only alias we'll keep, but we'll still show a gentle reminder
+      echo "Note: 'cc' is an alias for 'checkconfig'\n"
+    fi
+    echo "Checking and fixing node configurations..."
     /workspace/comfy-download/node_config_checker.sh apply
     ;;
     
@@ -193,22 +249,33 @@ case "$command" in
     ;;
   
   help|*)
-    echo "Command Reference:"
-    echo "------------------"
-    echo "dl start [--all|--workflows|--nodes] - Start the automatic download and sync system"
-    echo "dl stop                           - Stop the automatic download and sync system"
-    echo "dl status                         - Show current download and sync statistics"
-    echo "dl report                         - Generate a comprehensive report of today's operations"
-    echo "dl run                            - Run a download check manually once"
-    echo "dl backup                         - Run a backup manually once"
-    echo "dl sync [--all|--workflows|--nodes] - Run sync manually with options"
-    echo "dl bisync                         - Alias for 'dl sync --workflows'"
-    echo "dl bi                             - Alias for 'dl sync --workflows'"
-    echo "dl customsync                     - Alias for 'dl sync --nodes'"
-    echo "dl cs                             - Alias for 'dl sync --nodes'"
-    echo "dl checkconfig                    - Check and fix custom node configurations"
-    echo "dl cc                             - Alias for dl checkconfig"
-    echo "dl reset                          - Clean up duplicate log entries"
-    echo "dl help                           - Display this help message"
+    echo "ComfyUI Download Manager - Command Reference"
+    echo "===========================================\n"
+    
+    echo "CORE COMMANDS:"
+    echo "  dl start                   - Start all automated services"
+    echo "    --workflows              - Only start workflow sync services"
+    echo "    --nodes                  - Only start custom node sync services"
+    echo "  dl stop                    - Stop all automated services"
+    echo "  dl status                  - Show current system status"
+    echo "  dl help                    - Display this help message\n"
+    
+    echo "MANUAL OPERATIONS:"
+    echo "  dl run                     - Process new images once"
+    echo "  dl backup                  - Run backup manually once"
+    echo "  dl sync                    - Run complete sync manually"
+    echo "    --workflows              - Sync only workflows"
+    echo "    --nodes                  - Sync only custom nodes"
+    echo "  dl checkconfig (cc)        - Check and fix node configurations\n"
+    
+    echo "UTILITIES:"
+    echo "  dl report                  - Generate comprehensive system report"
+    echo "  dl reset                   - Clean up duplicate log entries"
+    
+    # Show deprecated commands notice
+    echo "\nDEPRECATED COMMANDS:"
+    echo "  The following commands will be removed in a future update:"
+    echo "  dl bisync, dl bi           → use 'dl sync --workflows' instead"
+    echo "  dl customsync, dl cs       → use 'dl sync --nodes' instead"
     ;;
 esac
