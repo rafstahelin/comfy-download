@@ -6,7 +6,11 @@ We've significantly improved the comfy-download repository in the `feature/comma
 
 ### 1. Reorganized Command Structure
 - Commands grouped into logical categories (Core, Manual Operations, Utilities)
+<<<<<<< HEAD
 - Added local time display in status outputs
+=======
+- Added local time zone display in status outputs
+>>>>>>> origin/feature/command-cleanup
 - Added `--comfy` option for managing settings/templates files separately
 - Standardized option handling and improved help messages
 
@@ -30,7 +34,11 @@ We've significantly improved the comfy-download repository in the `feature/comma
 
 ### Core Commands
 - [ ] `dl help` - Verify new formatted help output
+<<<<<<< HEAD
 - [ ] `dl status` - Check if it displays correct information
+=======
+- [ ] `dl status` - Check if it shows local time correctly
+>>>>>>> origin/feature/command-cleanup
 - [ ] `dl start` - Verify it initializes all services
 - [ ] `dl start --workflows` - Verify it only starts workflow sync
 - [ ] `dl start --nodes` - Verify it only starts node sync
@@ -55,6 +63,17 @@ We've significantly improved the comfy-download repository in the `feature/comma
 - [ ] Test with missing rclone configuration
 - [ ] Test with large workflow directory
 
+<<<<<<< HEAD
+=======
+## Time Zone Handling Improvements
+
+Instead of hardcoding "Panama" time, implement a better approach to detect the user's local time zone:
+
+- [ ] Modify dl-manager.sh to get time zone from the system or environment
+- [ ] Use a more generic time zone display format
+- [ ] Consider adding the actual time zone name to output (e.g., EST, PST)
+
+>>>>>>> origin/feature/command-cleanup
 ## Final Merge Steps
 - [ ] Address any issues found during testing
 - [ ] Update documentation with any additional findings
@@ -62,6 +81,10 @@ We've significantly improved the comfy-download repository in the `feature/comma
 - [ ] Merge to main when all tests pass
 
 ## Future Improvements
+<<<<<<< HEAD
+=======
+- [ ] Add support for custom time zone configuration
+>>>>>>> origin/feature/command-cleanup
 - [ ] Add enhanced error reporting and recovery options
 - [ ] Consider adding a config file for customizing sync directories
 - [ ] Add more visualization of sync status and progress

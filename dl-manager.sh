@@ -109,7 +109,11 @@ parse_options() {
         run_workflows=false
         run_comfy=false
         ;;
+<<<<<<< HEAD
       --comfy|cf)
+=======
+      --comfy)
+>>>>>>> origin/feature/command-cleanup
         run_workflows=false
         run_nodes=false
         ;;
@@ -133,6 +137,7 @@ run_sync() {
   local run_nodes=$(echo $parsed_options | cut -d' ' -f2)
   local run_comfy=$(echo $parsed_options | cut -d' ' -f3)
   
+<<<<<<< HEAD
   if [ "$run_workflows" = "true" ] && [ "$sync_workflows_done" = "false" ]; then
     print_section "Workflow Synchronization"
     print_status "Running workflow sync..."
@@ -144,6 +149,11 @@ run_sync() {
       echo -e "${GRAY}$(echo "$output" | tail -5)${NC}"
     fi
     sync_workflows_done=true
+=======
+  if [ "$run_workflows" = "true" ]; then
+    echo "Running workflow synchronization..."
+    /workspace/comfy-download/bisync_comfyui.sh $force_flag workflows
+>>>>>>> origin/feature/command-cleanup
   fi
   
   if [ "$run_nodes" = "true" ] && [ "$sync_nodes_done" = "false" ]; then
@@ -195,6 +205,30 @@ run_sync() {
     fi
     sync_comfy_done=true
   fi
+<<<<<<< HEAD
+=======
+  
+  if [ "$run_comfy" = "true" ]; then
+    echo "Running ComfyUI settings synchronization..."
+    /workspace/comfy-download/bisync_comfyui.sh $force_flag comfy
+  fi
+}
+
+# Function to show deprecated command warnings
+show_deprecated_warning() {
+  local old_cmd="$1"
+  local new_cmd="$2"
+  echo "Warning: '$old_cmd' is deprecated and will be removed in a future update."
+  echo "Please use '$new_cmd' instead."
+  echo ""
+>>>>>>> origin/feature/command-cleanup
+}
+
+# Display time in both UTC and local (Panama) time
+show_time() {
+  local utc_time=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+  local panama_time=$(TZ="America/Panama" date +"%Y-%m-%d %H:%M:%S Panama")
+  echo "Current time: $utc_time / $panama_time"
 }
 
 # Start cron jobs based on options
@@ -211,14 +245,23 @@ start_cron_jobs() {
   # Always start these core services
   print_status "Configuring core services..."
   (crontab -l 2>/dev/null | grep -q 'comfy-download/download_run.sh' || (crontab -l 2>/dev/null; echo '* * * * * /workspace/comfy-download/download_run.sh') | crontab -)
+<<<<<<< HEAD
+=======
+  (crontab -l 2>/dev/null | grep -q 'comfy-download/backup_comfyui.sh' || (crontab -l 2>/dev/null; echo '*/30 * * * * /workspace/comfy-download/backup_comfyui.sh') | crontab -)
+>>>>>>> origin/feature/command-cleanup
   (crontab -l 2>/dev/null | grep -q 'comfy-download/node_config_checker.sh' || (crontab -l 2>/dev/null; echo '0 */6 * * * /workspace/comfy-download/node_config_checker.sh apply') | crontab -)
   print_success "Core services configured"
   
   # Start workflow sync if specified
   if [ "$run_workflows" = "true" ]; then
+<<<<<<< HEAD
     print_status "Configuring workflow sync service..."
     (crontab -l 2>/dev/null | grep -q 'comfy-download/bisync_comfyui.sh.*--workflows' || (crontab -l 2>/dev/null; echo '*/5 * * * * /workspace/comfy-download/bisync_comfyui.sh --workflows') | crontab -)
     print_success "Workflow synchronization service scheduled"
+=======
+    (crontab -l 2>/dev/null | grep -q 'bisync_comfyui.sh.*workflows' || (crontab -l 2>/dev/null; echo '*/5 * * * * /workspace/comfy-download/bisync_comfyui.sh workflows') | crontab -)
+    echo "Workflow synchronization service started"
+>>>>>>> origin/feature/command-cleanup
   fi
   
   # Start custom node sync if specified
@@ -234,10 +277,17 @@ start_cron_jobs() {
     (crontab -l 2>/dev/null | grep -q 'comfy-download/bisync_comfyui.sh.*--comfy' || (crontab -l 2>/dev/null; echo '*/10 * * * * /workspace/comfy-download/bisync_comfyui.sh --comfy') | crontab -)
     print_success "ComfyUI settings synchronization service scheduled"
   fi
+  
+  # Start comfy settings sync if specified
+  if [ "$run_comfy" = "true" ]; then
+    (crontab -l 2>/dev/null | grep -q 'bisync_comfyui.sh.*comfy' || (crontab -l 2>/dev/null; echo '*/10 * * * * /workspace/comfy-download/bisync_comfyui.sh comfy') | crontab -)
+    echo "ComfyUI settings synchronization service started"
+  fi
 }
 
 case "$command" in
   start)
+<<<<<<< HEAD
     # Display header
     print_section "ComfyUI Download Manager - Starting Services"
     print_status "Initializing services at $(get_formatted_time)"
@@ -254,6 +304,15 @@ case "$command" in
     fi
     
     # Run sync operations
+=======
+    # Show current time
+    show_time
+    
+    # Run immediate operations
+    echo "Starting services..."
+    /workspace/comfy-download/backup_comfyui.sh force
+    /workspace/comfy-download/node_config_checker.sh apply
+>>>>>>> origin/feature/command-cleanup
     run_sync $options
     
     # Set up cron jobs
@@ -272,8 +331,14 @@ case "$command" in
     ;;
   
   status)
+<<<<<<< HEAD
     print_section "ComfyUI Download Manager - Status"
     print_status "Status as of $(get_formatted_time)"
+=======
+    # Show current time
+    show_time
+    
+>>>>>>> origin/feature/command-cleanup
     TODAY=$(date +%Y-%m-%d)
     echo "Today: $TODAY"
     
@@ -295,15 +360,28 @@ case "$command" in
       print_success "$LAST_BACKUP"
     fi
 
+<<<<<<< HEAD
     # Add sync status information
     print_section "Sync Status"
+=======
+    # Add sync status information (all types)
+    echo -e "\nSync status:"
+>>>>>>> origin/feature/command-cleanup
     
     # Workflow sync
-    LAST_SYNC=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | tail -1)
+    LAST_SYNC=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | grep "workflows" | tail -1)
     if [ -z "$LAST_SYNC" ]; then
       print_warning "No successful workflow syncs recorded"
     else
       print_success "Workflows: $LAST_SYNC"
+    fi
+    
+    # ComfyUI settings sync
+    LAST_COMFY_SYNC=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | grep "comfy" | tail -1)
+    if [ -z "$LAST_COMFY_SYNC" ]; then
+      echo "No successful ComfyUI settings syncs recorded"
+    else
+      echo "ComfyUI settings: $LAST_COMFY_SYNC"
     fi
     
     # Custom node sync
@@ -320,6 +398,18 @@ case "$command" in
       print_warning "No ComfyUI settings syncs recorded"
     else
       print_success "ComfyUI settings: $LAST_COMFY_SYNC"
+    fi
+
+    # List node directories being synced
+    echo -e "\nCustom node directories being synced:"
+    if [ -d "/workspace/comfy-data/milehighstyler" ]; then
+      echo "- milehighstyler: $(du -sh "/workspace/comfy-data/milehighstyler" 2>/dev/null | cut -f1)"
+    fi
+    if [ -d "/workspace/comfy-data/plushparameters" ]; then
+      echo "- plushparameters: $(du -sh "/workspace/comfy-data/plushparameters" 2>/dev/null | cut -f1)"
+    fi
+    if [ -d "/workspace/comfy-data/plushprompts" ]; then
+      echo "- plushprompts: $(du -sh "/workspace/comfy-data/plushprompts" 2>/dev/null | cut -f1)"
     fi
 
     # Check workflow size
@@ -382,7 +472,13 @@ case "$command" in
     ;;
     
   report)
+<<<<<<< HEAD
     print_section "ComfyUI Download System Report: $(get_formatted_time)"
+=======
+    # Show current time
+    show_time
+    
+>>>>>>> origin/feature/command-cleanup
     TODAY=$(date +%Y-%m-%d)
     
     print_section "Download Statistics"
@@ -405,18 +501,38 @@ case "$command" in
     BACKUP_COUNT=$(grep "Backup complete" /workspace/ComfyUI/logs/backup.log 2>/dev/null | grep -c "$(date +%Y-%m-%d)")
     echo -e "${CYAN}Backups today:${NC} $BACKUP_COUNT"
     
+<<<<<<< HEAD
     # Get sync information
     print_section "Sync Status"
+=======
+    # Get sync information (all types)
+    echo -e "\nSync Status:"
+>>>>>>> origin/feature/command-cleanup
     
     # Workflow sync
-    LAST_SYNC=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | tail -1)
+    LAST_SYNC=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | grep "workflows" | tail -1)
     if [ -z "$LAST_SYNC" ]; then
       print_warning "No successful workflow syncs recorded"
     else
       print_success "Workflows: $LAST_SYNC"
     fi
+<<<<<<< HEAD
     SYNC_COUNT=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | grep -c "$(date +%Y-%m-%d)")
     echo -e "${CYAN}Workflow syncs today:${NC} $SYNC_COUNT"
+=======
+    SYNC_COUNT=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | grep "workflows" | grep -c "$(date +%Y-%m-%d)")
+    echo "  Workflow syncs today: $SYNC_COUNT"
+>>>>>>> origin/feature/command-cleanup
+    
+    # ComfyUI settings sync
+    LAST_COMFY_SYNC=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | grep "comfy" | tail -1)
+    if [ -z "$LAST_COMFY_SYNC" ]; then
+      echo "  No successful ComfyUI settings syncs recorded"
+    else
+      echo "  ComfyUI settings: $LAST_COMFY_SYNC"
+    fi
+    COMFY_SYNC_COUNT=$(grep "sync completed successfully" /workspace/ComfyUI/logs/bisync.log 2>/dev/null | grep "comfy" | grep -c "$(date +%Y-%m-%d)")
+    echo "  ComfyUI settings syncs today: $COMFY_SYNC_COUNT"
     
     # Custom node sync
     LAST_CUSTOM_SYNC=$(grep "Custom node data sync process finished" /workspace/ComfyUI/logs/custom_sync.log 2>/dev/null | tail -1)
@@ -467,6 +583,7 @@ case "$command" in
   help|*)
     print_section "ComfyUI Download Manager - Command Reference"
     
+<<<<<<< HEAD
     print_section "CORE COMMANDS"
     echo -e "${CYAN}dl start${NC}                   - Start all automated services"
     echo -e "  ${YELLOW}--workflows${NC} ${GREEN}(wf)${NC}        - Only start workflow sync services"
@@ -488,5 +605,55 @@ case "$command" in
     print_section "UTILITIES"
     echo -e "${CYAN}dl report${NC}                  - Generate comprehensive system report"
     echo -e "${CYAN}dl reset${NC}                   - Clean up duplicate log entries"
+=======
+    echo "CORE COMMANDS:"
+    echo "  dl start                   - Start all automated services"
+    echo "    --workflows              - Only start workflow sync services"
+    echo "    --nodes                  - Only start custom node sync services"
+    echo "    --comfy                  - Only start ComfyUI settings sync services"
+    echo "  dl stop                    - Stop all automated services"
+    echo "  dl status                  - Show current system status"
+    echo "  dl help                    - Display this help message\n"
+    
+    echo "MANUAL OPERATIONS:"
+    echo "  dl run                     - Process new images once"
+    echo "  dl backup                  - Run backup manually once"
+    echo "  dl sync                    - Run complete sync manually"
+    echo "    --workflows              - Sync only workflows"
+    echo "    --nodes                  - Sync only custom nodes"
+    echo "    --comfy                  - Sync only ComfyUI settings"
+    echo "  dl checkconfig (cc)        - Check and fix node configurations\n"
+    
+    echo "UTILITIES:"
+    echo "  dl report                  - Generate comprehensive system report"
+    echo "  dl reset                   - Clean up duplicate log entries"
+    
+    # Show custom node details
+    echo "\nCUSTOM NODE DIRECTORIES:"
+    if [ -d "/workspace/comfy-data/milehighstyler" ]; then
+      size_mhs=$(du -sh "/workspace/comfy-data/milehighstyler" 2>/dev/null | cut -f1)
+      echo "  - milehighstyler (${size_mhs:-"N/A"})"
+    else
+      echo "  - milehighstyler (not found)"
+    fi
+    if [ -d "/workspace/comfy-data/plushparameters" ]; then
+      size_pp=$(du -sh "/workspace/comfy-data/plushparameters" 2>/dev/null | cut -f1)
+      echo "  - plushparameters (${size_pp:-"N/A"})"
+    else
+      echo "  - plushparameters (not found)"
+    fi
+    if [ -d "/workspace/comfy-data/plushprompts" ]; then
+      size_pr=$(du -sh "/workspace/comfy-data/plushprompts" 2>/dev/null | cut -f1)
+      echo "  - plushprompts (${size_pr:-"N/A"})"
+    else
+      echo "  - plushprompts (not found)"
+    fi
+    
+    # Show deprecated commands notice
+    echo "\nDEPRECATED COMMANDS:"
+    echo "  The following commands will be removed in a future update:"
+    echo "  dl bisync, dl bi           → use 'dl sync --workflows' instead"
+    echo "  dl customsync, dl cs       → use 'dl sync --nodes' instead"
+>>>>>>> origin/feature/command-cleanup
     ;;
 esac
