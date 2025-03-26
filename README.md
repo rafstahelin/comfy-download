@@ -31,23 +31,39 @@ Instead, install each repository separately to avoid alias conflicts.
 ## Usage
 After installation, the following commands are available:
 
-| Command | Description |
-|---------|-------------|
-| dl start [--all\|--workflows\|--nodes] | Start the automatic download and sync system with options |
-| dl stop | Stop the automatic download and sync system |
-| dl status | Show current download and sync statistics |
-| dl report | Generate a comprehensive report of today's operations |
-| dl run | Run a download check manually once |
-| dl backup | Run a backup of ComfyUI user folder to Dropbox manually |
-| dl sync [--all\|--workflows\|--nodes] | Run sync manually with options |
-| dl bisync | Alias for 'dl sync --workflows' |
-| dl bi | Alias for 'dl sync --workflows' |
-| dl customsync | Alias for 'dl sync --nodes' |
-| dl cs | Alias for 'dl sync --nodes' |
-| dl checkconfig | Check and fix custom node configurations |
-| dl cc | Alias for dl checkconfig |
-| dl reset | Clean up duplicate log entries in the download log |
-| dl help | Display command reference |
+### Core Commands
+```
+dl start                   - Start all automated services
+  --workflows              - Only start workflow sync services
+  --nodes                  - Only start custom node sync services
+  --comfy                  - Only start ComfyUI settings sync services
+dl stop                    - Stop all automated services
+dl status                  - Show current system status
+dl help                    - Display this help message
+```
+
+### Manual Operations
+```
+dl run                     - Process new images once
+dl backup                  - Run backup manually once
+dl sync                    - Run complete sync manually
+  --workflows              - Sync only workflows
+  --nodes                  - Sync only custom nodes
+  --comfy                  - Sync only ComfyUI settings
+dl checkconfig (cc)        - Check and fix node configurations
+```
+
+### Utilities
+```
+dl report                  - Generate comprehensive system report
+dl reset                   - Clean up duplicate log entries
+```
+
+### Deprecated Commands
+```
+dl bisync, dl bi           → use 'dl sync --workflows' instead
+dl customsync, dl cs       → use 'dl sync --nodes' instead
+```
 
 ## How It Works
 
@@ -59,37 +75,42 @@ After installation, the following commands are available:
 
 ### User Settings Backup
 - When you run `dl start`, an immediate backup of your ComfyUI user settings is performed
-- A cron job is set up to back up your settings every hour
+- A cron job is set up to back up your settings every 30 minutes
 - The backup includes the entire `/workspace/ComfyUI/user/default/` folder
 - Files are compressed as a timestamped zip file and uploaded to Dropbox at `dbx:/studio/ai/libs/comfy-data/default-bckp`
 - Backup status can be viewed with the `dl status` command
 - Manual backups can be triggered with the `dl backup` command
 
-### Bidirectional Synchronization
-- When you run `dl start`, an immediate bidirectional sync is performed
-- A cron job is set up to sync your settings and workflows every 5 minutes
-- The sync includes:
+### Synchronization Types
+The system handles three types of synchronization:
+
+#### 1. Workflow Synchronization
+- Syncs the `/workspace/ComfyUI/user/default/workflows/` directory
+- Runs every 5 minutes when started
+- Can be manually triggered with `dl sync --workflows`
+- Ensures your workflow files are kept in sync between different environments
+
+#### 2. ComfyUI Settings Synchronization
+- Syncs the ComfyUI settings and templates files:
   - `/workspace/ComfyUI/user/default/comfy.templates.json`
   - `/workspace/ComfyUI/user/default/comfy.settings.json`
-  - `/workspace/ComfyUI/user/default/workflows/`
-- Files are synchronized with Dropbox at `dbx:/studio/ai/libs/comfy-data/default`
-- This ensures that when you start a new RunPod container, it will always have your latest workflows and settings
-- Manual sync can be triggered with the `dl sync --workflows` command (or the shorter `dl bisync` or `dl bi` aliases)
+- Runs every 10 minutes when started
+- Can be manually triggered with `dl sync --comfy`
+- Keeps your ComfyUI configuration consistent across environments
 
-### Custom Node Data Synchronization
-- When you run `dl start`, an immediate custom node data sync is performed
-- A cron job is set up to sync custom node data every 30 minutes
-- The sync includes:
+#### 3. Custom Node Data Synchronization
+- Syncs custom node data directories:
   - `/workspace/comfy-data/milehighstyler` ↔ `dbx:/studio/ai/libs/comfy-data/milehighstyler`
   - `/workspace/comfy-data/plushparameters` ↔ `dbx:/studio/ai/libs/comfy-data/plushparameters`
   - `/workspace/comfy-data/plushprompts` ↔ `dbx:/studio/ai/libs/comfy-data/plushprompts`
-- This ensures that custom node data is synchronized between different RunPod instances
-- Manual sync can be triggered with the `dl sync --nodes` command (or the shorter `dl customsync` or `dl cs` aliases)
+- Runs every 30 minutes when started
+- Can be manually triggered with `dl sync --nodes`
+- Ensures consistent custom node configurations across environments
 
 ### All-in-One Synchronization
-- You can sync both workflows and custom nodes in a single operation with `dl sync --all` or simply `dl sync`
-- This is useful when you want to ensure everything is synchronized at once
-- The `dl start` command by default runs both types of sync operations
+- You can sync everything in a single operation with `dl sync`
+- This is useful when you want to ensure all data is synchronized at once
+- The `dl start` command by default runs all sync operations
 
 ### Custom Node Configuration Management
 - When you run `dl start`, custom node configurations are automatically validated and fixed
@@ -97,7 +118,7 @@ After installation, the following commands are available:
 - The checker manages:
   - Plush-for-ComfyUI configuration (`/workspace/ComfyUI/custom_nodes/Plush-for-ComfyUI/user/text_file_dirs.json`)
   - ComfyUI-Easy-Use styles symlink (`/workspace/ComfyUI/custom_nodes/ComfyUI-Easy-Use/styles`)
-- Manual configuration check can be triggered with the `dl checkconfig` command or the shorter `dl cc` command
+- Manual configuration check can be triggered with the `dl checkconfig` command
 
 ## Directory Structure
 
@@ -210,6 +231,7 @@ For best performance with the bidirectional sync:
 - v1.5.0 - Separated from Easy repository for independent installation and management
 - v1.6.0 - Added custom node data synchronization and configuration management
 - v1.7.0 - Simplified sync commands with unified structure and options
+- v1.8.0 - Reorganized command system with clearer categories and added ComfyUI settings sync
 
 ## License
 See LICENSE file for details.
